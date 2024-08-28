@@ -1,0 +1,6 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(QT NAMES Qt6 Qt5 COMPONENTS Core Gui REQUIRED)
+find_dependency(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui REQUIRED)
