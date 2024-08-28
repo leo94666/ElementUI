@@ -7,12 +7,12 @@ include_directories(include)
 
 collect(FILES_SOURCE "*.cpp" core quick)
 collect(FILES_HEADER "*.h" include)
-message(STATUS "QT_VERSION ${QT_VERSION_MAJOR}")
+
+file(GLOB_RECURSE ALL_SOURCE "core/*.*" "include/*.h")
 
 if(${QT_VERSION_MAJOR} LESS 6)
     message(STATUS "QT_VERSION 5")
     collect(FILES_RESOURCE "*.qml" Qt5)
-
 elseif ()
     message(STATUS "QT_VERSION 6")
     collect(FILES_RESOURCE "*.qml" Qt6)

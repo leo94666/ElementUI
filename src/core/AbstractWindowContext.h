@@ -1,6 +1,6 @@
 #pragma once
 
 
-class AbstractWindowContext {
+__declspec(dllexport) class AbstractWindowContext {
 
 };

@@ -46,3 +46,18 @@ public:                                                                         
                                                                                                    \
 private:                                                                                           \
     TYPE _##M;
+
+
+
+
+#ifndef QWK_CORE_EXPORT
+#  ifdef QWK_CORE_STATIC
+#    define QWK_CORE_EXPORT
+#  else
+#    ifdef QWK_CORE_LIBRARY
+#      define QWK_CORE_EXPORT Q_DECL_EXPORT
+#    else
+#      define QWK_CORE_EXPORT Q_DECL_IMPORT
+#    endif
+#  endif
+#endif
