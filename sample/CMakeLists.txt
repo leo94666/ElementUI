@@ -18,3 +18,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         ${QT_PLUGINS}
         Element::UI
 )
+
+
+install(TARGETS ${PROJECT_NAME} ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
+

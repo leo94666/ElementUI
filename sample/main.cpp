@@ -17,6 +17,9 @@ int main(int argc, char *argv[]) {
     QApplication::setApplicationDisplayName("sample");
     QApplication::setApplicationVersion("");
     QApplication app(argc, argv);
+
+    QQuickWindow::setDefaultAlphaBuffer(true);
+
     QQmlApplicationEngine engine;
 
     QWK::registerTypes(&engine);

@@ -6,6 +6,8 @@ option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
 
 set(ElementUIPlugin "elementuiplugin")
+set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/_out/${CMAKE_BUILD_TYPE})
+
 
 include_directories(include)
 include_directories(core)
@@ -14,9 +16,6 @@ include_directories(core/kernel)
 include_directories(core/shared)
 include_directories(core/style)
 include_directories(quick)
-
-
-#add_definitions(-DQWK_CORE_LIBRARY)
 
 add_compile_definitions(QWK_CORE_LIBRARY)
 add_compile_definitions(QWK_QUICK_LIBRARY)
@@ -44,61 +43,10 @@ set(_src
         core/shared/systemwindow_p.h
         core/contexts/abstractwindowcontext_p.h
         core/contexts/abstractwindowcontext.cpp
-)
-
-if (WIN32)
-    list(APPEND _src
-            core/qwindowkit_windows.h
-            core/qwindowkit_windows.cpp
-            core/shared/qwkwindowsextra_p.h
-            core/shared/windows10borderhandler_p.h
-    )
-elseif (APPLE)
-else ()
-    list(APPEND _src
-            core/qwindowkit_linux.h
-    )
-endif ()
-
-if (WIN32)
-    list(APPEND _src
-            core/contexts/win32windowcontext_p.h
-            core/contexts/win32windowcontext.cpp
-    )
-    list(APPEND _links_private uxtheme)
-elseif (APPLE)
-    list(APPEND _src
-            core/contexts/cocoawindowcontext_p.h
-            core/contexts/cocoawindowcontext.mm
-    )
-    list(APPEND _links_private
-            "-framework Foundation"
-            "-framework Cocoa"
-            "-framework AppKit"
-    )
-else ()
-    list(APPEND _src
-            core/contexts/qtwindowcontext_p.h
-            core/contexts/qtwindowcontext.cpp
-    )
-endif ()
-
-list(APPEND _src
         core/style/styleagent.h
         core/style/styleagent_p.h
         core/style/styleagent.cpp
-)
 
-if (WIN32)
-    list(APPEND _src core/style/styleagent_win.cpp)
-elseif (APPLE)
-    list(APPEND _src core/style/styleagent_mac.mm)
-else ()
-    list(APPEND _src core/style/styleagent_linux.cpp)
-endif ()
-
-
-list(APPEND _src
         quick/qwkquickglobal.h
         quick/qwkquickglobal.cpp
         quick/quickitemdelegate_p.h
@@ -109,9 +57,38 @@ list(APPEND _src
 )
 
 if (WIN32)
-    list(APPEND _src quick/quickwindowagent_win.cpp)
+    list(APPEND _src
+            core/qwindowkit_windows.h
+            core/qwindowkit_windows.cpp
+            core/shared/qwkwindowsextra_p.h
+            core/shared/windows10borderhandler_p.h
+            core/contexts/win32windowcontext_p.h
+            core/contexts/win32windowcontext.cpp
+            core/style/styleagent_win.cpp
+            quick/quickwindowagent_win.cpp
+    )
+
+    list(APPEND _links_private uxtheme)
+
 elseif (APPLE)
-    list(APPEND _src quick/quickwindowagent_mac.cpp)
+    list(APPEND _src
+            core/contexts/cocoawindowcontext_p.h
+            core/contexts/cocoawindowcontext.mm
+            core/style/styleagent_mac.mm
+            quick/quickwindowagent_mac.cpp
+    )
+    list(APPEND _links_private
+            "-framework Foundation"
+            "-framework Cocoa"
+            "-framework AppKit"
+    )
+else ()
+    list(APPEND _src
+            core/qwindowkit_linux.h
+            core/contexts/qtwindowcontext_p.h
+            core/contexts/qtwindowcontext.cpp
+            core/style/styleagent_linux.cpp
+    )
 endif ()
 
 if (${QT_VERSION_MAJOR} EQUAL 6)
@@ -128,9 +105,7 @@ foreach (filepath IN LISTS FILES_RESOURCE FILES_QML)
     set_source_files_properties(${filepath} PROPERTIES QT_RESOURCE_ALIAS ${filename})
 endforeach ()
 
-
-#qt_compat_add_library(${ElementUIPlugin} BUILD_SHARED_LIBS)
-qt_add_library(${ElementUIPlugin} SHARED)
+qt_compat_add_library(${ElementUIPlugin} BUILD_SHARED_LIBS)
 
 qt_add_qml_module(${ElementUIPlugin}
         PLUGIN_TARGET ${ElementUIPlugin}
@@ -151,6 +126,6 @@ target_link_libraries(${ElementUIPlugin} PUBLIC
 #解决引入Qt私有头文件的问题
 target_include_directories(${ElementUIPlugin} PUBLIC quick ${Qt${QT_VERSION_MAJOR}Gui_PRIVATE_INCLUDE_DIRS} ${Qt${QT_VERSION_MAJOR}Quick_PRIVATE_INCLUDE_DIRS})
 
-
-
 add_library(Element::UI ALIAS ${ElementUIPlugin})
+
+install(TARGETS ${ElementUIPlugin} ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
