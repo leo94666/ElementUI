@@ -6,8 +6,6 @@ option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
 
 set(ElementUIPlugin "elementuiplugin")
-set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/_out/${CMAKE_BUILD_TYPE})
-
 
 include_directories(include)
 include_directories(core)
@@ -20,6 +18,27 @@ include_directories(quick)
 add_compile_definitions(QWK_CORE_LIBRARY)
 add_compile_definitions(QWK_QUICK_LIBRARY)
 
+
+if (MSVC)
+    #告诉链接器在生成可执行文件时不生成清单文件
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /manifest:no")
+    #告诉链接器在生成模块时不生成清单文件
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /manifest:no")
+    #告诉链接器在生成共享库时不生成清单文件
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /manifest:no")
+    #添加 /utf-8 编译器选项
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
+    #自动导出所有具有默认可见性（即没有明确声明为 __declspec(dllexport) 或 __declspec(dllimport)）的全局符号
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+    if(NOT DEFINED CMAKE_DEBUG_POSTFIX)
+        #指定在生成的可执行文件或库文件的名称后添加的后缀
+        set(CMAKE_DEBUG_POSTFIX "d")
+    endif()
+elseif (MINGW)
+    set(CMAKE_STATIC_LIBRARY_PREFIX "")
+    set(CMAKE_SHARED_LIBRARY_PREFIX "")
+endif ()
 #collect(FILES_SOURCE "core/*.cpp" "quick/*.cpp")
 #collect(FILES_HEADER "include/*.h" "core/context/*.h" "core/kernel/*.h")
 #collect(ALL_SOURCE "include/*.h" "core/*" "quick/*" "Application.cpp")
@@ -127,5 +146,13 @@ target_link_libraries(${ElementUIPlugin} PUBLIC
 target_include_directories(${ElementUIPlugin} PUBLIC quick ${Qt${QT_VERSION_MAJOR}Gui_PRIVATE_INCLUDE_DIRS} ${Qt${QT_VERSION_MAJOR}Quick_PRIVATE_INCLUDE_DIRS})
 
 add_library(Element::UI ALIAS ${ElementUIPlugin})
+
+add_custom_command(
+        TARGET ${ElementUIPlugin}
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${QT_QML_PLUGIN_DIRECTORY}${PROJECT_NAME}/${ElementUIPlugin}${CMAKE_DEBUG_POSTFIX}.dll
+        ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${ElementUIPlugin}${CMAKE_DEBUG_POSTFIX}.dll
+)
 
 install(TARGETS ${ElementUIPlugin} ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
