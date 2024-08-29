@@ -147,12 +147,28 @@ target_include_directories(${ElementUIPlugin} PUBLIC quick ${Qt${QT_VERSION_MAJO
 
 add_library(Element::UI ALIAS ${ElementUIPlugin})
 
-add_custom_command(
-        TARGET ${ElementUIPlugin}
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-        ${QT_QML_PLUGIN_DIRECTORY}${PROJECT_NAME}/${ElementUIPlugin}${CMAKE_DEBUG_POSTFIX}.dll
-        ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${ElementUIPlugin}${CMAKE_DEBUG_POSTFIX}.dll
-)
+
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+
+elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    add_custom_command(
+            TARGET ${ElementUIPlugin}
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${QT_QML_PLUGIN_DIRECTORY}${PROJECT_NAME}/${ElementUIPlugin}${CMAKE_DEBUG_POSTFIX}.dll
+            ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${ElementUIPlugin}${CMAKE_DEBUG_POSTFIX}.dll
+    )
+elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    add_custom_command(
+            TARGET ${ElementUIPlugin}
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${QT_QML_PLUGIN_DIRECTORY}${PROJECT_NAME}/libelementuiplugin.dylib
+            ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libelementuiplugin.dylib
+    )
+else()
+    message(STATUS "Other system: ${CMAKE_SYSTEM_NAME}")
+endif()
+
 
 install(TARGETS ${ElementUIPlugin} ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
