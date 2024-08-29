@@ -32,3 +32,5 @@ include(Function)
 include(FindQt)
 
 add_subdirectory(src)
+
+add_subdirectory(sample)

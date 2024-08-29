@@ -1,5 +1,6 @@
 #pragma once
-
+#include <QtCore/QEvent>
+#include <QtGui/QtEvents>
 
 #define Q_PROPERTY_AUTO_P(TYPE, M)                                                                 \
     Q_PROPERTY(TYPE M MEMBER _##M NOTIFY M##Changed)                                               \
@@ -48,16 +49,3 @@ private:                                                                        
     TYPE _##M;
 
 
-
-
-#ifndef QWK_CORE_EXPORT
-#  ifdef QWK_CORE_STATIC
-#    define QWK_CORE_EXPORT
-#  else
-#    ifdef QWK_CORE_LIBRARY
-#      define QWK_CORE_EXPORT Q_DECL_EXPORT
-#    else
-#      define QWK_CORE_EXPORT Q_DECL_IMPORT
-#    endif
-#  endif
-#endif

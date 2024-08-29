@@ -4,120 +4,92 @@
 # ----------------------------------
 # CMake API
 # ----------------------------------
-macro(qwk_add_library _target)
-    set(options AUTOGEN NO_SYNC_INCLUDE NO_WIN_RC)
-    set(oneValueArgs SYNC_INCLUDE_PREFIX PREFIX)
-    set(multiValueArgs SYNC_INCLUDE_OPTIONS)
-    cmake_parse_arguments(FUNC "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    if(FUNC_AUTOGEN)
-        set(CMAKE_AUTOMOC ON)
-        set(CMAKE_AUTOUIC ON)
-        set(CMAKE_AUTORCC ON)
-    endif()
+# 定义一个函数来判断文件是否是头文件
+function(is_header_file filename is_header_var)
+    # 获取文件扩展名
+    get_filename_component(extension ${filename} EXT)
+    # 判断是否为头文件，这里以.h和.hpp为头文件的扩展名
+    if (extension STREQUAL ".h" OR extension STREQUAL ".hpp")
+        set(${is_header_var} TRUE PARENT_SCOPE)
+    else ()
+        set(${is_header_var} FALSE PARENT_SCOPE)
+    endif ()
+endfunction()
 
-    if(QWINDOWKIT_BUILD_STATIC)
-        set(_type STATIC)
-    else()
-        set(_type SHARED)
-    endif()
-
-    add_library(${_target} ${_type})
-
-    if(WIN32 AND NOT FUNC_NO_WIN_RC AND(${_type} STREQUAL "SHARED"))
-        qm_add_win_rc(${_target}
-                NAME ${QWINDOWKIT_INSTALL_NAME}
-                DESCRIPTION ${QWINDOWKIT_PROJECT_DESCRIPTION}
-                COPYRIGHT ${QWINDOWKIT_PROJECT_COPYRIGHT}
-        )
-    endif()
-
-    if(FUNC_PREFIX)
-        set(_prefix_option PREFIX ${FUNC_PREFIX})
-    else()
-        set(_prefix_option)
-    endif()
-
-    # Set global definitions
-    qm_export_defines(${_target} ${_prefix_option})
-
-    # Configure target
-    qm_configure_target(${_target} ${FUNC_UNPARSED_ARGUMENTS})
-
-    # Add include directories
-    target_include_directories(${_target} PRIVATE ${QWINDOWKIT_BUILD_INCLUDE_DIR})
-    target_include_directories(${_target} PRIVATE .)
-
-    # Library name
-    if(${_target} MATCHES "^QWK(.+)")
-        set(_name ${CMAKE_MATCH_1})
-        set_target_properties(${_target} PROPERTIES EXPORT_NAME ${_name})
-    else()
-        set(_name ${_target})
-    endif()
-
-    add_library(${QWINDOWKIT_INSTALL_NAME}::${_name} ALIAS ${_target})
-
-    if(FUNC_SYNC_INCLUDE_PREFIX)
-        set(_inc_name ${FUNC_SYNC_INCLUDE_PREFIX})
-    else()
-        set(_inc_name ${_target})
-    endif()
-
-    set(_install_options)
-
-    if(QWINDOWKIT_INSTALL)
-        install(TARGETS ${_target}
-                EXPORT ${QWINDOWKIT_INSTALL_NAME}Targets
-                RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" OPTIONAL
-                LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" OPTIONAL
-                ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" OPTIONAL
-        )
-
-        target_include_directories(${_target} PUBLIC
-                "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${QWINDOWKIT_INSTALL_NAME}>"
-        )
-
-        set(_install_options
-                INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}/${QWINDOWKIT_INSTALL_NAME}/${_inc_name}"
-        )
-    endif()
-
-    if(NOT FUNC_NO_SYNC_INCLUDE)
-        # Generate a standard include directory in build directory
-        qm_sync_include(. "${QWINDOWKIT_GENERATED_INCLUDE_DIR}/${_inc_name}" ${_install_options}
-                ${FUNC_SYNC_INCLUDE_OPTIONS} FORCE
-        )
-        target_include_directories(${_target} PUBLIC
-                "$<BUILD_INTERFACE:${QWINDOWKIT_GENERATED_INCLUDE_DIR}>"
-        )
-    endif()
+# 定义一个宏，用于递归查找文件，并允许自定义排除模式
+macro(collect var)
+    #message("collect argument count: ${ARGC}, all arguments: ${ARGV}")
+    #message("all arguments: ${ARGV}")
+    #message("optional arguments: ${ARGN}")
+    set(FILES "")
+    if (${ARGC} LESS 1)
+        message(FATAL_ERROR "collect macro requires at least two argument")
+    elseif (${ARGC} EQUAL 1)
+        foreach (_dir IN ITEMS ${CMAKE_CURRENT_SOURCE_DIR})
+            #file(GLOB_RECURSE _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}${_dir} ${pattern})
+            file(GLOB_RECURSE _files ${_dir})
+            foreach (_file IN LISTS _files)
+                list(APPEND FILES ${_file})
+            endforeach ()
+        endforeach ()
+    elseif (${ARGC} GREATER 1)
+        #message(STATUS "CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}")
+        #message(STATUS "ARGN=${ARGN}")
+        foreach (_dir IN ITEMS ${ARGN})
+            #message(STATUS "_dir=${_dir}")
+            #file(GLOB_RECURSE _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}${_dir} ${pattern})
+            set(_absolute_dir ${CMAKE_CURRENT_SOURCE_DIR}/${_dir})
+            get_filename_component(FOLDER_PATH ${_absolute_dir} DIRECTORY)
+            #message(STATUS "FOLDER_PATH=${FOLDER_PATH}")
+            #include_directories(${FOLDER_PATH})
+            file(GLOB_RECURSE _files ${_absolute_dir})
+            foreach (_file IN LISTS _files)
+                list(APPEND FILES ${_file})
+            endforeach ()
+        endforeach ()
+    endif ()
+    set(${var} ${FILES})
+    message(STATUS "collect ${var} as ${FILES}")
 endmacro()
 
 
 # 定义一个宏，用于递归查找文件，并允许自定义排除模式
-macro(collect var pattern)
-
+macro(collect_relative var)
     #message("collect argument count: ${ARGC}, all arguments: ${ARGV}")
     #message("all arguments: ${ARGV}")
     #message("optional arguments: ${ARGN}")
-
-    if(${ARGC} LESS 2)
+    set(FILES "")
+    if (${ARGC} LESS 1)
         message(FATAL_ERROR "collect macro requires at least two argument")
-    elseif (${ARGC} EQUAL 2)
-        set(DIRS ${CMAKE_CURRENT_SOURCE_DIR})
-    elseif (${ARGC} GREATER 2)
-        set(DIRS ${ARGN})
+    elseif (${ARGC} EQUAL 1)
+        foreach (_dir IN ITEMS ${CMAKE_CURRENT_SOURCE_DIR})
+            #file(GLOB_RECURSE _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}${_dir} ${pattern})
+            file(GLOB_RECURSE _files ${_dir})
+            foreach (_file IN LISTS _files)
+                list(APPEND FILES ${_file})
+            endforeach ()
+        endforeach ()
+    elseif (${ARGC} GREATER 1)
+        #message(STATUS "CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}")
+        #message(STATUS "ARGN=${ARGN}")
+        foreach (_dir IN ITEMS ${ARGN})
+            #message(STATUS "_dir=${_dir}")
+            #file(GLOB_RECURSE _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}${_dir} ${pattern})
+            set(_absolute_dir ${CMAKE_CURRENT_SOURCE_DIR}/${_dir})
+            get_filename_component(FOLDER_PATH ${_absolute_dir} DIRECTORY)
+            #message(STATUS "FOLDER_PATH=${FOLDER_PATH}")
+            #include_directories(${FOLDER_PATH})
+            file(GLOB_RECURSE _files ${_absolute_dir})
+            foreach (_file IN LISTS _files)
+                string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/" "" filename ${_file})
+                list(APPEND FILES ${filename})
+            endforeach ()
+        endforeach ()
     endif ()
-
-    set(${var} "")
-    foreach (_dir IN ITEMS ${DIRS})
-        #file(GLOB_RECURSE _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}${_dir} ${pattern})
-        file(GLOB_RECURSE _files ${CMAKE_CURRENT_SOURCE_DIR}${_dir} ${pattern})
-        foreach(_file IN LISTS _files)
-            list(APPEND ${var} ${_file})
-        endforeach()
-    endforeach ()
-
-    message(STATUS "collect ${_files} in ${var}")
+    set(${var} ${FILES})
+    message(STATUS "collect_relative ${var} as ${FILES}")
 endmacro()
+
+
+
